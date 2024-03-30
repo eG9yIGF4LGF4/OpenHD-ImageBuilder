@@ -15,7 +15,7 @@ jobs:
       fail-fast: false # Don't fail all if any of the jobs is failing
       matrix:
         #TARGET: [pi-bullseye, x86-lunar, radxa-cm3, x20, radxa-zero3w] # <-- Add targets here!
-        TARGET: [pi-bullseye, x86-lunar, radxa-cm3, x20, radxa-zero3w] # <-- Add targets here!
+        TARGET: [pi-bullseye] # <-- Add targets here!
     steps:
     - name: Maximize build space
       uses: easimon/maximize-build-space@master
@@ -236,20 +236,7 @@ jobs:
         echo 'EOF' >> $GITHUB_ENV
         xz -v7T0 *.img
         mv * ../
-
-    - name: Upload to R2
-      shell: bash
-      env:
-        aws_endpoint: "https://fra1.digitaloceanspaces.com"
-        aws_key_id: ${{ secrets.DIGITALOCEAN_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.DIGITALOCEAN_SECRET_ACCESS_KEY }}
-        aws_s3_bucket: openhd-images
-        AWS_EC2_METADATA_DISABLED: true
-      run: |
-        aws configure set aws_access_key_id $aws_key_id
-        aws configure set aws_secret_access_key $aws_secret_access_key 
-        aws s3 --endpoint-url $aws_endpoint cp ${{ env.NAME }} s3://$aws_s3_bucket/Downloader/temp/${{ env.NAME }}
-
+        
     - name: generate variables for the ImageWriter
       run: |
         export NAME=$(cat last.release)
@@ -265,20 +252,6 @@ jobs:
         echo "$SUM" >> ${{ matrix.TARGET }}.txt
         echo "$RELEASEDATE" >> ${{ matrix.TARGET }}.txt
         wc -c *.xz | cut -f 1 -d " "
-
-    - name: Upload text-files to aws
-      shell: bash
-      env:
-        aws_endpoint: "https://fra1.digitaloceanspaces.com"
-        aws_key_id: ${{ secrets.DIGITALOCEAN_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.DIGITALOCEAN_SECRET_ACCESS_KEY }}
-        aws_s3_bucket: openhd-images
-        AWS_EC2_METADATA_DISABLED: true
-      run: |
-        aws configure set aws_access_key_id $aws_key_id
-        aws configure set aws_secret_access_key $aws_secret_access_key 
-        aws s3 --endpoint-url $aws_endpoint cp ${{ matrix.TARGET }}.txt s3://$aws_s3_bucket/Downloader/temp/${{ matrix.TARGET }}.txt
-
 
   upload2:
     if: "github.event_name == 'push' && github.ref == 'refs/heads/release'"
@@ -314,19 +287,6 @@ jobs:
         xz -v7T0 *.img
         mv * ../
 
-    - name: Upload to R2
-      shell: bash
-      env:
-        aws_endpoint: "https://fra1.digitaloceanspaces.com"
-        aws_key_id: ${{ secrets.DIGITALOCEAN_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.DIGITALOCEAN_SECRET_ACCESS_KEY }}
-        aws_s3_bucket: openhd-images
-        AWS_EC2_METADATA_DISABLED: true
-      run: |
-        aws configure set aws_access_key_id $aws_key_id
-        aws configure set aws_secret_access_key $aws_secret_access_key 
-        aws s3 --endpoint-url $aws_endpoint cp ${{ env.NAME }} s3://$aws_s3_bucket/Downloader/temp/${{ env.NAME }}
-
     - name: generate variables for the ImageWriter
       run: |
         export NAME=$(cat last.release)
@@ -342,16 +302,3 @@ jobs:
         echo "$SUM" >> ${{ matrix.TARGET }}.txt
         echo "$RELEASEDATE" >> ${{ matrix.TARGET }}.txt
         wc -c *.xz | cut -f 1 -d " "
-
-    - name: Upload text-files
-      shell: bash
-      env:
-        aws_endpoint: "https://fra1.digitaloceanspaces.com"
-        aws_key_id: ${{ secrets.DIGITALOCEAN_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.DIGITALOCEAN_SECRET_ACCESS_KEY }}
-        aws_s3_bucket: openhd-images
-        AWS_EC2_METADATA_DISABLED: true
-      run: |
-        aws configure set aws_access_key_id $aws_key_id
-        aws configure set aws_secret_access_key $aws_secret_access_key 
-        aws s3 --endpoint-url $aws_endpoint cp ${{ matrix.TARGET }}.txt s3://$aws_s3_bucket/Downloader/temp/${{ matrix.TARGET }}.txt
