@@ -19,10 +19,10 @@ function install_x20_packages {
 # Raspbian-specific code
 function install_raspbian_packages {
     sudo apt update && apt remove -y dkms
-    BASE_PACKAGES="openhd-sys-utils openhd qopenhd apt-transport-https apt-utils open-hd-web-ui"
+    BASE_PACKAGES="openhd-sys-utils openhd qopenhd apt-transport-https apt-utils open-hd-web-ui openvpn"
     PLATFORM_PACKAGES_HOLD="raspberrypi-kernel libraspberrypi-dev libraspberrypi-bin libraspberrypi0 libraspberrypi-doc raspberrypi-bootloader"
     PLATFORM_PACKAGES_REMOVE="locales gdb librsvg2-2 guile-2.2-libs firmware-libertas gcc-10 nfs-common libcamera* raspberrypi-kernel"
-    PLATFORM_PACKAGES="openhd-linux-pi firmware-atheros openhd-userland libseek-thermal libcamera-openhd openhd-qt openssh-server"
+    PLATFORM_PACKAGES="openhd-linux-pi firmware-atheros openhd-userland libseek-thermal libcamera-openhd openhd-qt openssh-server gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-tools gstreamer1.0-plugins-bad "
 }
 # Ubuntu-Rockship-specific code
 function install_radxa-ubuntu_packages {
@@ -68,9 +68,12 @@ function install_ubuntu_x86_packages {
 
 function clone_github_repos {
     cd /opt
+    
     git clone --recursive --depth 1 https://github.com/OpenHD/OpenHD
     git clone --recursive --depth 1 https://github.com/OpenHD/QOpenHD
     git clone https://github.com/OpenHD/veye_raspberrypi.git
+    git clone --branch=applied/debian/sid https://git.launchpad.net/ubuntu/+source/socat
+    
     chmod -R 777 /opt
 }
 
@@ -106,9 +109,9 @@ function install_openhd {
     fi
 
      # Add OpenHD Repository platform-specific packages
-        apt install -y curl
-        curl -1sLf 'https://dl.cloudsmith.io/public/openhd/release/setup.deb.sh'| sudo -E bash
-        curl -1sLf 'https://dl.cloudsmith.io/public/openhd/dev-release/setup.deb.sh'| sudo -E bash
+        apt install -y curl apt-transport-https ca-certificates gnupg 
+        #curl -1sLf 'https://dl.cloudsmith.io/public/openhd/release/setup.deb.sh'| sudo -E bash
+        #curl -1sLf 'https://dl.cloudsmith.io/public/openhd/dev-release/setup.deb.sh'| sudo -E bash
         apt update
 
     # Remove platform-specific packages
