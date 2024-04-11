@@ -104,7 +104,29 @@ jobs:
     - name: Compose release filename
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
       run: echo "artifact_name=OpenHD-image-${{ matrix.TARGET }}-${{ matrix.DISTRO }}-${GITHUB_REF##*/}-${{ env.DT }}" >> $GITHUB_ENV
-        
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+    - name: Create Release
+      if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ steps.tag_version.outputs.new_tag }}
+        release_name: openhd-${{ steps.tag_version.outputs.new_tag }}
+        body: ${{ steps.tag_version.outputs.changelog }}
+        draft: false
+        prerelease: false
+        #force: true
+    - name: Output Release URL File
+      run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
     - name: Pack image for ${{ matrix.TARGET }}
       uses: 'actions/upload-artifact@v3'
       with:
@@ -112,6 +134,25 @@ jobs:
         path: |
           *.img
           if-no-files-found: error
+    - name: Get Release File Name & Upload URL
+      id: get_release_info
+      run: |
+        echo ::set-output name=file_name::openhd # RepositoryName-v1.0.0
+        value=`cat release_url/release_url.txt`
+        echo ::set-output name=upload_url::$value
+      env:
+        TAG_REF_NAME: ${{ steps.get_version.outputs.VERSION }}
+        REPOSITORY_NAME: ${{ github.repository }}
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+        asset_path: "**/*.img"
+        asset_name: ${{ steps.get_release_info.outputs.file_name }}-${{ matrix.TARGET }}.img
+        asset_content_type: application/zip
 
   createEmmcImage:
     needs: build
